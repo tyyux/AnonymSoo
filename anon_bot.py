@@ -50,8 +50,8 @@ def main_menu():
     markup.add(
         types.KeyboardButton("🔗 Моя ссылка"),
         types.KeyboardButton("📊 Статистика"),
-        types.KeyboardButton("❓ Помощь"),
-        types.KeyboardButton("💬 Поддержка")
+        types.KeyboardButton("💡 Помощь"),
+        types.KeyboardButton("💌 Поддержка")
     )
     return markup
 
@@ -68,7 +68,7 @@ def start(message):
         try:
             owner_id = int(args[1].replace('user_', ''))
         except:
-            bot.send_message(message.chat.id, "Неверная ссылка")
+            bot.send_message(message.chat.id, "Неверная ссылка 😔")
             return
 
         conn = sqlite3.connect(DB_NAME)
@@ -78,17 +78,17 @@ def start(message):
         conn.close()
 
         if not owner:
-            bot.send_message(message.chat.id, "Автор не найден")
+            bot.send_message(message.chat.id, "Автор не найден 😔")
             return
 
         if owner_id == user_id:
-            bot.send_message(message.chat.id, "Это твоя же ссылка")
+            bot.send_message(message.chat.id, "Это твоя же ссылка 🙂")
             return
 
         user_states[user_id] = {'action': 'ask', 'owner_id': owner_id}
         bot.send_message(
             message.chat.id,
-            "Задай анонимный вопрос. Просто напиши его сюда:",
+            "✍️ Задай анонимный вопрос.\nПросто напиши его сюда 👇",
             reply_markup=types.ReplyKeyboardRemove()
         )
         return
@@ -110,13 +110,13 @@ def start(message):
 
     bot.send_message(
         message.chat.id,
-        f"Привет, {first_name}!\n\n"
-        f"Твоя анонимная ссылка:\n{link}\n\n"
-        f"Кидай её друзьям — они смогут задать тебе вопрос анонимно.",
+        f"✨ Привет, {first_name}!\n\n"
+        f"🔗 Твоя личная ссылка:\n{link}\n\n"
+        f"📩 Кидай её друзьям — они смогут задать тебе анонимный вопрос.",
         reply_markup=main_menu()
     )
 
-# ============ МЕНЮ ============
+# ============ КНОПКИ МЕНЮ ============
 
 @bot.message_handler(func=lambda m: m.text == "🔗 Моя ссылка")
 def show_link(message):
@@ -125,7 +125,7 @@ def show_link(message):
     link = f"https://t.me/{bot_username}?start=user_{user_id}"
     bot.send_message(
         message.chat.id,
-        f"Твоя ссылка:\n{link}\n\nКидай её друзьям",
+        f"🔗 Твоя ссылка:\n{link}\n\nКидай её друзьям 👇",
         reply_markup=main_menu()
     )
 
@@ -141,31 +141,32 @@ def show_stats(message):
     conn.close()
     bot.send_message(
         message.chat.id,
-        f"Твоя статистика:\n\n"
-        f"Всего вопросов: {total}\n"
-        f"Раскрыто отправителей: {paid}\n"
-        f"Осталось анонимных: {total - paid}",
+        f"📊 Твоя статистика:\n\n"
+        f"📩 Всего вопросов: {total}\n"
+        f"🔓 Раскрыто отправителей: {paid}\n"
+        f"🕵️ Осталось анонимных: {total - paid}",
         reply_markup=main_menu()
     )
 
-@bot.message_handler(func=lambda m: m.text == "❓ Помощь")
+@bot.message_handler(func=lambda m: m.text == "💡 Помощь")
 def show_help(message):
     bot.send_message(
         message.chat.id,
-        "Как пользоваться ботом:\n\n"
-        "1. Получи свою ссылку\n"
-        "2. Кидай её друзьям\n"
-        "3. Они пишут тебе анонимно\n"
-        "4. Можешь ответить или узнать отправителя за 50 звезд\n\n"
-        "Всё просто!",
+        "💡 Как пользоваться ботом:\n\n"
+        "1️⃣ Получи свою ссылку\n"
+        "2️⃣ Кидай её друзьям\n"
+        "3️⃣ Они пишут тебе анонимно\n"
+        "4️⃣ Можешь ответить или узнать отправителя за 50 ⭐\n\n"
+        "Всё просто! 🚀",
         reply_markup=main_menu()
     )
 
-@bot.message_handler(func=lambda m: m.text == "💬 Поддержка")
+@bot.message_handler(func=lambda m: m.text == "💌 Поддержка")
 def show_support(message):
     bot.send_message(
         message.chat.id,
-        f"Поддержка:\n\nЕсли что-то не работает — пиши:\n{SUPPORT_USERNAME}",
+        f"💌 Поддержка:\n\n"
+        f"Если что-то не работает или есть вопросы — пиши:\n{SUPPORT_USERNAME}",
         reply_markup=main_menu()
     )
 
@@ -189,48 +190,48 @@ def receive_question(message):
 
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
-        types.InlineKeyboardButton("Узнать за 50 звезд", callback_data=f"reveal_{question_id}"),
-        types.InlineKeyboardButton("Ответить", callback_data=f"reply_{question_id}"),
-        types.InlineKeyboardButton("Скрыть", callback_data=f"hide_{question_id}")
+        types.InlineKeyboardButton("🕵️ Кто это? — 50 ⭐", callback_data=f"reveal_{question_id}"),
+        types.InlineKeyboardButton("✍️ Ответить", callback_data=f"reply_{question_id}"),
+        types.InlineKeyboardButton("🗑️ Удалить", callback_data=f"hide_{question_id}")
     )
 
     try:
         bot.send_message(
             owner_id,
-            f"Анонимный вопрос:\n\n{text}",
+            f"📩 Анонимный вопрос:\n\n{text}",
             reply_markup=markup
         )
     except Exception as e:
-        bot.send_message(sender_id, "Автор недоступен")
+        bot.send_message(sender_id, "Автор недоступен 😔")
         del user_states[sender_id]
         return
 
-    bot.send_message(sender_id, "Отправлено! Хочешь задать ещё? Просто напиши.")
+    bot.send_message(sender_id, "✅ Отправлено! Хочешь задать ещё? Просто напиши.")
 
-# ============ КНОПКИ ============
+# ============ КНОПКИ ПОД ВОПРОСОМ ============
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith('hide_'))
 def hide_question(call):
     bot.edit_message_text(
-        "Вопрос скрыт",
+        "🗑️ Вопрос удалён",
         call.message.chat.id,
         call.message.message_id
     )
-    bot.answer_callback_query(call.id, "Скрыто")
+    bot.answer_callback_query(call.id, "Удалено")
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith('reply_'))
 def reply_question(call):
     question_id = int(call.data.replace('reply_', ''))
     user_states[call.from_user.id] = {'action': 'reply', 'question_id': question_id}
-    bot.send_message(call.message.chat.id, "Напиши ответ на вопрос:")
+    bot.send_message(call.message.chat.id, "✍️ Напиши ответ на вопрос:")
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda c: c.data.startswith('reveal_'))
 def reveal_question(call):
-    bot.answer_callback_query(call.id, "Оплата Stars будет позже")
-    bot.send_message(call.message.chat.id, "Оплата Stars появится в следующем обновлении.")
+    bot.answer_callback_query(call.id, "Оплата Stars будет позже 😊")
+    bot.send_message(call.message.chat.id, "💎 Оплата Stars появится в следующем обновлении.")
 
-# ============ ОТВЕТ ============
+# ============ ОТПРАВКА ОТВЕТА ============
 
 @bot.message_handler(func=lambda m: user_states.get(m.from_user.id, {}).get('action') == 'reply')
 def send_reply(message):
@@ -244,16 +245,16 @@ def send_reply(message):
     conn.close()
 
     if not row:
-        bot.send_message(message.chat.id, "Вопрос не найден")
+        bot.send_message(message.chat.id, "Вопрос не найден 😔")
         del user_states[user_id]
         return
 
     sender_id = row[0]
     try:
-        bot.send_message(sender_id, f"Автор ответил на твой вопрос:\n\n{message.text}")
-        bot.send_message(message.chat.id, "Ответ отправлен!", reply_markup=main_menu())
+        bot.send_message(sender_id, f"💬 Автор ответил на твой вопрос:\n\n{message.text}")
+        bot.send_message(message.chat.id, "✅ Ответ отправлен!", reply_markup=main_menu())
     except:
-        bot.send_message(message.chat.id, "Не удалось отправить")
+        bot.send_message(message.chat.id, "Не удалось отправить 😔")
 
     del user_states[user_id]
 
