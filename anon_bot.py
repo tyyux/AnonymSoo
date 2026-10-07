@@ -110,9 +110,10 @@ def start(message):
 
     bot.send_message(
         message.chat.id,
-        f"✨ Привет, {first_name}!\n\n"
-        f"🔗 Твоя личная ссылка:\n{link}\n\n"
-        f"📩 Кидай её друзьям — они смогут задать тебе анонимный вопрос.",
+        f"👋 Привет, {first_name}!\n\n"
+        f"Я бот для анонимных вопросов.\n\n"
+        f"🔗 Твоя ссылка:\n{link}\n\n"
+        f"Кидай её друзьям — и получай вопросы. Анонимно.",
         reply_markup=main_menu()
     )
 
@@ -226,10 +227,94 @@ def reply_question(call):
     bot.send_message(call.message.chat.id, "✍️ Напиши ответ на вопрос:")
     bot.answer_callback_query(call.id)
 
+# ============ ОПЛАТА STARS ============
+
 @bot.callback_query_handler(func=lambda c: c.data.startswith('reveal_'))
 def reveal_question(call):
-    bot.answer_callback_query(call.id, "Оплата Stars будет позже 😊")
-    bot.send_message(call.message.chat.id, "💎 Оплата Stars появится в следующем обновлении.")
+    question_id = int(call.data.replace('reveal_', ''))
+    user_id = call.from_user.id
+
+    # Проверяем, оплачен ли уже
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute('SELECT sender_id, paid FROM questions WHERE id = ?', (question_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        bot.answer_callback_query(call.id, "Вопрос не найден")
+        return
+
+    sender_id, paid = row
+
+    if paid == 1:
+        # Уже оплачено — показываем сразу
+        show_sender(call.message.chat.id, sender_id)
+        bot.answer_callback_query(call.id, "Уже раскрыто")
+        return
+
+    # Отправляем счёт
+    prices = [types.LabeledPrice(label="Узнать отправителя", amount=STARS_PRICE)]
+    bot.send_invoice(
+        chat_id=call.message.chat.id,
+        title="🕵️ Кто это?",
+        description="Раскрыть отправителя анонимного вопроса",
+        invoice_payload=f"reveal_{question_id}_{user_id}",
+        provider_token="",
+        currency="XTR",
+        prices=prices
+    )
+    bot.answer_callback_query(call.id)
+
+def show_sender(chat_id, sender_id):
+    """Показывает имя отправителя"""
+    try:
+        user = bot.get_chat(sender_id)
+        name = user.first_name or "Без имени"
+        username = f" (@{user.username})" if user.username else ""
+        bot.send_message(
+            chat_id,
+            f"🔓 Автор вопроса:\n{name}{username}"
+        )
+    except:
+        bot.send_message(
+            chat_id,
+            f"🔓 Автор вопроса: <a href='tg://user?id={sender_id}'>нажми сюда</a>",
+            parse_mode='HTML'
+        )
+
+# ============ ОБРАБОТКА ПЛАТЕЖА ============
+
+@bot.pre_checkout_query_handler(func=lambda query: True)
+def process_pre_checkout(pre_checkout_query):
+    """Обязательное подтверждение перед оплатой"""
+    bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+@bot.message_handler(content_types=['successful_payment'])
+def process_successful_payment(message):
+    """Выдача товара после оплаты"""
+    payload = message.successful_payment.invoice_payload
+    parts = payload.split('_')
+    question_id = int(parts[1])
+    buyer_id = int(parts[2])
+
+    # Помечаем вопрос как оплаченный
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+    cur.execute('SELECT sender_id FROM questions WHERE id = ?', (question_id,))
+    row = cur.fetchone()
+    cur.execute('UPDATE questions SET paid = 1 WHERE id = ?', (question_id,))
+    conn.commit()
+    conn.close()
+
+    if not row:
+        bot.send_message(message.chat.id, "❌ Вопрос не найден")
+        return
+
+    sender_id = row[0]
+
+    bot.send_message(message.chat.id, "✅ Оплата прошла! Спасибо 💎")
+    show_sender(message.chat.id, sender_id)
 
 # ============ ОТПРАВКА ОТВЕТА ============
 
